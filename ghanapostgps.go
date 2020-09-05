@@ -1,34 +1,33 @@
 package ghanapostgps
 
-
 import (
-	"strings"
-	"net/http"
+  "bytes"
+  "crypto/aes"
+  "crypto/cipher"
+  "encoding/base64"
   "io/ioutil"
+  mrand "math/rand"
+  "net/http"
   "net/url"
-	mrand "math/rand"
+  "strings"
   "time"
-	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
-	"encoding/base64"
 )
 
-const  (
-  ALLOWED_CHARACTERS = "0123456789qwertyuiopasdfghjklzxcvbnm!@$#^&*()"
+const (
+	ALLOWED_CHARACTERS = "0123456789qwertyuiopasdfghjklzxcvbnm!@$#^&*()"
 )
 
 type params struct {
-  apiKey          string
-  uuid            string
-  apiURL          string
-  asaaseAPI       string
-  language        string
-  languageCode    string
-  androidCert     string
-  androidPackage  string
-  country         string
-  countryName     string
+	apiKey         string
+	uuid           string
+	apiURL         string
+	asaaseAPI      string
+	language       string
+	languageCode   string
+	androidCert    string
+	androidPackage string
+	country        string
+	countryName    string
 }
 
 func APIRequest(method string, params *params, payload *strings.Reader) string {
@@ -50,8 +49,8 @@ func APIRequest(method string, params *params, payload *strings.Reader) string {
 
 	res, err := client.Do(req)
 	body, err := ioutil.ReadAll(res.Body)
-	
-  defer res.Body.Close()
+
+	defer res.Body.Close()
 
 	return string(body)
 }
@@ -154,4 +153,15 @@ func CheckError(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func IsValidGPAddress(address string) (bool, string){
+  isValid := true
+  address = strings.Join(strings.Split(strings.ToUpper(strings.Trim(address, "")), ""), "")
+
+  if len(address) != 9 {
+    isValid = false
+  }
+
+  return isValid, address
 }
