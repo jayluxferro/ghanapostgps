@@ -65,7 +65,7 @@ func RandomString(number int) string {
 	return string(data)
 }
 
-func GetLocation(code string, defaults *params) string {
+func GetLocation(code string, defaults *Params) string {
 	params := url.Values{
 		"AsaaseLogs": {""},
 		"Action":     {"GetLocation"},
@@ -75,7 +75,7 @@ func GetLocation(code string, defaults *params) string {
 	return APIRequest("POST", defaults, dataRequest)
 }
 
-func GetDataRequest(v *url.Values, defaults *params) *strings.Reader {
+func GetDataRequest(v *url.Values, defaults *Params) *strings.Reader {
 	data := GPGPSEncrypt(v.Encode(), defaults)
 	params := url.Values{
 		"DataRequest": {data},
@@ -83,7 +83,7 @@ func GetDataRequest(v *url.Values, defaults *params) *strings.Reader {
 	return strings.NewReader(params.Encode() + "&")
 }
 
-func GPGPSEncrypt(data string, params *params) string {
+func GPGPSEncrypt(data string, params *Params) string {
 	decryptionKey := []byte(params.apiKey)
 	iv := []byte(RandomString(len(decryptionKey)))
 	encryptedMsg := AESEncrypt(iv, decryptionKey, data)
@@ -95,7 +95,7 @@ func GPGPSEncrypt(data string, params *params) string {
 	return base64.StdEncoding.EncodeToString(payload)
 }
 
-func GPGPSDecrypt(encodedData string, params *params) string {
+func GPGPSDecrypt(encodedData string, params *Params) string {
 	decodedData, _ := base64.StdEncoding.DecodeString(encodedData)
 	// remove IV (16 byte)
 	decryptionKey := []byte(params.apiKey)
