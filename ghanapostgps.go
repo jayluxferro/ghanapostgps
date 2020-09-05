@@ -157,7 +157,7 @@ func CheckError(err error) {
 
 func IsValidGPAddress(address string) (bool, string){
   isValid := true
-  address = strings.Join(strings.Split(strings.ToUpper(strings.Trim(address, "")), ""), "")
+  address = strings.Join(strings.Split(strings.ToUpper(strings.Trim(address, "")), "-"), "")
 
   if len(address) != 9 {
     isValid = false
