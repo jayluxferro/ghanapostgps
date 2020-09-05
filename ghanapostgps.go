@@ -11,6 +11,7 @@ import (
   "net/url"
   "strings"
   "time"
+  "fmt"
 )
 
 const (
@@ -103,6 +104,10 @@ func GPGPSDecrypt(encodedData string, params *Params) string {
 	msg := decodedData[len(decryptionKey):]
 
 	return string(AESDecrypt(iv, decryptionKey, msg))
+}
+
+func print(data ...interface{}) (n int, err error) {
+	return fmt.Println(data...)
 }
 
 func AESEncrypt(iv []byte, key []byte, src string) []byte {
