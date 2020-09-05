@@ -17,7 +17,7 @@ const (
 	ALLOWED_CHARACTERS = "0123456789qwertyuiopasdfghjklzxcvbnm!@$#^&*()"
 )
 
-type params struct {
+type Params struct {
 	apiKey         string
 	uuid           string
 	apiURL         string
@@ -30,7 +30,7 @@ type params struct {
 	countryName    string
 }
 
-func APIRequest(method string, params *params, payload *strings.Reader) string {
+func APIRequest(method string, params *Params, payload *strings.Reader) string {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, params.apiURL, payload)
 
