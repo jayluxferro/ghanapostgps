@@ -18,33 +18,33 @@ const (
 )
 
 type Params struct {
-	apiKey         string
-	uuid           string
-	apiURL         string
-	asaaseAPI      string
-	language       string
-	languageCode   string
-	androidCert    string
-	androidPackage string
-	country        string
-	countryName    string
+	ApiKey         string
+	UUID           string
+	ApiURL         string
+	AsaaseAPI      string
+	Language       string
+	LanguageCode   string
+	AndroidCert    string
+	AndroidPackage string
+	Country        string
+	CountryName    string
 }
 
 func APIRequest(method string, params *Params, payload *strings.Reader) string {
 	client := &http.Client{}
-	req, err := http.NewRequest(method, params.apiURL, payload)
+	req, err := http.NewRequest(method, params.ApiURL, payload)
 
 	if err != nil {
 		print(err)
 	}
-	req.Header.Add("Language", params.language)
-	req.Header.Add("X-Android-Cert", params.androidCert)
-	req.Header.Add("X-Android-Package", params.androidPackage)
-	req.Header.Add("DeviceID", params.uuid)
-	req.Header.Add("LanguageCode", params.languageCode)
-	req.Header.Add("Country", params.country)
-	req.Header.Add("CountryName", params.countryName)
-	req.Header.Add("AsaaseUser", params.asaaseAPI)
+	req.Header.Add("Language", params.Language)
+	req.Header.Add("X-Android-Cert", params.AndroidCert)
+	req.Header.Add("X-Android-Package", params.AndroidPackage)
+	req.Header.Add("DeviceID", params.UUID)
+	req.Header.Add("LanguageCode", params.LanguageCode)
+	req.Header.Add("Country", params.Country)
+	req.Header.Add("CountryName", params.CountryName)
+	req.Header.Add("AsaaseUser", params.AsaaseAPI)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 
 	res, err := client.Do(req)
@@ -84,7 +84,7 @@ func GetDataRequest(v *url.Values, defaults *Params) *strings.Reader {
 }
 
 func GPGPSEncrypt(data string, params *Params) string {
-	decryptionKey := []byte(params.apiKey)
+	decryptionKey := []byte(params.ApiKey)
 	iv := []byte(RandomString(len(decryptionKey)))
 	encryptedMsg := AESEncrypt(iv, decryptionKey, data)
 	payload := []byte{}
@@ -98,7 +98,7 @@ func GPGPSEncrypt(data string, params *Params) string {
 func GPGPSDecrypt(encodedData string, params *Params) string {
 	decodedData, _ := base64.StdEncoding.DecodeString(encodedData)
 	// remove IV (16 byte)
-	decryptionKey := []byte(params.apiKey)
+	decryptionKey := []byte(params.ApiKey)
 	iv := decodedData[:len(decryptionKey)]
 	msg := decodedData[len(decryptionKey):]
 
