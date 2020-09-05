@@ -72,7 +72,7 @@ func GetLocation(code string, defaults *Params) string {
 		"GPSName":    {code},
 	}
 	dataRequest := GetDataRequest(&params, defaults)
-	return APIRequest("POST", defaults, dataRequest)
+	return GPGPSDecrypt(APIRequest("POST", defaults, dataRequest), defaults)
 }
 
 func GetDataRequest(v *url.Values, defaults *Params) *strings.Reader {
