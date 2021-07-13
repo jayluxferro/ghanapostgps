@@ -162,11 +162,26 @@ func CheckError(err error) {
 
 func IsValidGPAddress(address string) (bool, string){
   isValid := true
-  address = strings.Join(strings.Split(strings.ToUpper(strings.Trim(address, "")), "-"), "")
+  address = FormatString(address)
 
   if len(address) < 9 {
     isValid = false
   }
 
   return isValid, address
+}
+
+func GetAddress(latitude string, longitude string, defaults *Params) string {
+	params := url.Values{
+		"AsaaseLogs": {""},
+		"Action":     {"GetGPSName"},
+		"Lati":       {latitude},
+		"Longi":      {longitude},
+	}
+	dataRequest := GetDataRequest(&params, defaults)
+	return GPGPSDecrypt(APIRequest("POST", defaults, dataRequest), defaults)
+}
+
+func FormatString(address string) string {
+  return strings.Join(strings.Split(strings.ToUpper(strings.Trim(address, "")), "-"), "")
 }
