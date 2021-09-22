@@ -4,6 +4,11 @@ import (
   "bytes"
   "crypto/aes"
   "crypto/cipher"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/asn1"
+	"log"
   "encoding/base64"
   "io/ioutil"
   mrand "math/rand"
@@ -12,11 +17,17 @@ import (
   "strings"
   "time"
   "fmt"
+	"github.com/google/uuid"
 )
 
 const (
+  BaseAPIURL = "https://api.ghanapostgps.com/GetAPIData.aspx"
 	ALLOWED_CHARACTERS = "0123456789qwertyuiopasdfghjklzxcvbnm!@$#^&*()"
+	STR_SEC_SYMBOL = "\""
+	PUB_KEY_START = "-----BEGIN PUBLIC KEY-----"
+	PUB_KEY_END = "-----END PUBLIC KEY-----"
 )
+
 
 type Params struct {
 	ApiKey         string
@@ -31,6 +42,42 @@ type Params struct {
 	CountryName    string
 }
 
+func GetAPIKeys(params *Params) string {
+  // Get public key
+  pubKey := GetPublicAPIKey(params)
+
+  // Get payload to be encrypted using RSA
+  initPayload := GetRSADataToBeEncrypted(params.UUID, params.ApiKey)
+
+  // Getting RSA Public key
+  rsaPubKey := GetIdRsaPubFromStr(pubKey)
+
+  encPayload, err := RSAEncrypt(initPayload, rsaPubKey)
+  if err == nil {
+    // send encPayload to server
+    params.ApiURL = BaseAPIURL
+    res := strings.Split(GetPublicAPI(encPayload, params), "||")
+
+    if len(res) == 2 {
+      params.ApiURL = res[1]
+      envData := `GPGPS_apiKey="` + params.ApiKey + `"
+GPGPS_uuid="` + params.UUID + `"
+GPGPS_apiURL="` + params.ApiURL + `"
+GPGPS_asaaseAPI="` + params.AsaaseAPI + `"
+GPGPS_language="` + params.Language + `"
+GPGPS_languageCode="` + params.LanguageCode + `"
+GPGPS_androidCert="` + params.AndroidCert + `"
+GPGPS_androidPackage="` + params.AndroidPackage + `"
+GPGPS_country="` + params.Country + `"
+GPGPS_countryName="` + params.CountryName + `"`
+
+			// envData
+			return envData
+    }
+  }
+	return ""
+}
+
 func APIRequest(method string, params *Params, payload *strings.Reader) string {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, params.ApiURL, payload)
@@ -38,6 +85,7 @@ func APIRequest(method string, params *Params, payload *strings.Reader) string {
 	if err != nil {
 		print(err)
 	}
+
 	req.Header.Add("Language", params.Language)
 	req.Header.Add("X-Android-Cert", params.AndroidCert)
 	req.Header.Add("X-Android-Package", params.AndroidPackage)
@@ -84,6 +132,17 @@ func GetDataRequest(v *url.Values, defaults *Params) *strings.Reader {
 	return strings.NewReader(params.Encode() + "&")
 }
 
+func Print(data ...interface{}) (n int, err error) {
+	return fmt.Println(data...)
+}
+
+func GetPublicAPI(clientDeviceData string, params *Params) string {
+	v := url.Values{}
+	v.Set("ApiData", clientDeviceData)
+	params.ApiURL = params.ApiURL + "?" + v.Encode() + "&"
+	return GPGPSDecrypt(strings.ReplaceAll(APIRequest("GET", params, strings.NewReader("")), STR_SEC_SYMBOL, ""), params)
+}
+
 func GPGPSEncrypt(data string, params *Params) string {
 	decryptionKey := []byte(params.ApiKey)
 	iv := []byte(RandomString(len(decryptionKey)))
@@ -104,10 +163,6 @@ func GPGPSDecrypt(encodedData string, params *Params) string {
 	msg := decodedData[len(decryptionKey):]
 
 	return string(AESDecrypt(iv, decryptionKey, msg))
-}
-
-func print(data ...interface{}) (n int, err error) {
-	return fmt.Println(data...)
 }
 
 func AESEncrypt(iv []byte, key []byte, src string) []byte {
@@ -185,3 +240,129 @@ func GetAddress(latitude string, longitude string, defaults *Params) string {
 func FormatString(address string) string {
   return strings.Join(strings.Split(strings.ToUpper(strings.Trim(address, "")), "-"), "")
 }
+
+func GetRSADataToBeEncrypted(uuid string, aesKey string) string {
+	return "Android||" + uuid + "||" + aesKey
+}
+
+func GetPublicAPIKey(params *Params) string {
+	res := APIRequest("GET", params, strings.NewReader(""))
+	res = strings.ReplaceAll(res, "\n", "")
+	res = strings.ReplaceAll(res, PUB_KEY_START, "")
+	res = strings.ReplaceAll(res, PUB_KEY_END, "")
+	return strings.ToValidUTF8(res, "")
+}
+
+func UUID() string {
+	return uuid.New().String()
+}
+
+func GetIdRsaPubFromStr(keyStr string) *rsa.PublicKey {
+	// key is base64 encoded
+	data, err := base64.StdEncoding.DecodeString(keyStr)
+	if err != nil {
+		log.Printf("ERROR: fail get rsapub, %s", err.Error())
+		return nil
+	}
+
+	// this for ios key
+	var pubKey rsa.PublicKey
+	if rest, err := asn1.Unmarshal(data, &pubKey); err != nil {
+		//log.Printf("INFO: not ios key", keyStr)
+		fmt.Print("")
+	} else if len(rest) != 0 {
+		//log.Printf("INFO: not ios key, invalid length, %s", keyStr)
+		fmt.Print("")
+	} else {
+		return &pubKey
+	}
+
+	// this is for android
+	// get rsa public key
+	pub, err := x509.ParsePKIXPublicKey(data)
+	if err != nil {
+		//log.Printf("INFO: not android key, %s", keyStr)
+		return nil
+	}
+	switch pub := pub.(type) {
+	case *rsa.PublicKey:
+		return pub
+	default:
+		return nil
+	}
+}
+
+func RSAEncrypt(payload string, publicKey *rsa.PublicKey) (string, error) {
+	// params
+	msg := []byte(payload)
+	rnd := rand.Reader
+
+	// encrypt with PKCS1v15
+	ciperText, err := rsa.EncryptPKCS1v15(rnd, publicKey, msg)
+	if err != nil {
+		log.Printf("ERROR: fail to encrypt, %s", err.Error())
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(ciperText), nil
+}
+
+
+func getUserAddress(phone string, uuid string, defaults *Params) string {
+	params := url.Values{
+		"AsaaseLogs": {""},
+		"Action":     {"GetUserAddress"},
+		"MSISDN":     {phone},
+		"DeviceID":   {uuid},
+	}
+	dataRequest := GetDataRequest(&params, defaults)
+	return APIRequest("POST", defaults, dataRequest)
+}
+
+func sipDetails(phone string, defaults *Params) string {
+	params := url.Values{
+		"AsaaseLogs": {""},
+		"Action":     {"GetSIPDetails"},
+		"MSISDN":     {phone},
+	}
+	dataRequest := GetDataRequest(&params, defaults)
+	return APIRequest("POST", defaults, dataRequest)
+}
+
+func addCustomer(firstName string, lastName string, phone string, uuid string, defaults *Params) string {
+	params := url.Values{
+		"AsaaseLogs":   {""},
+		"Action":       {"AddCustomer"},
+		"FirstName":    {firstName},
+		"LastName":     {lastName},
+		"MobileNumber": {phone},
+		"Msisdn":       {phone},
+		"IMSI":         {phone},
+		"IMEI":         {phone},
+		"DeviceID":     {uuid},
+	}
+	dataRequest := GetDataRequest(&params, defaults)
+	return APIRequest("POST", defaults, dataRequest)
+}
+
+func verifySMS(phone string, code string, defaults *Params) string {
+	params := url.Values{
+		"AsaaseLogs": {""},
+		"Action":     {"VerifyCode"},
+		"GPSName":    {code},
+		"MSISDN":     {phone},
+	}
+	dataRequest := GetDataRequest(&params, defaults)
+	return APIRequest("POST", defaults, dataRequest)
+}
+
+func sendLoginSMS(phone string, defaults *Params) string {
+	params := url.Values{
+		"AsaaseLogs": {""},
+		"Action":     {"SendSMS"},
+		"GPSName":    {phone},
+	}
+	dataRequest := GetDataRequest(&params, defaults)
+	return APIRequest("POST", defaults, dataRequest)
+}
+
