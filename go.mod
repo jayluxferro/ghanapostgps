@@ -1,4 +1,4 @@
-module ghanapostgps
+module github.com/jayluxferro/ghanapostgps
 
 go 1.16
 
