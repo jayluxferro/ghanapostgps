@@ -12,7 +12,7 @@ const (
   BaseAPIURL = "https://api.ghanapostgps.com/v2/PublicGPGPSAPI.aspx"
 )
 var (
-  HeaderByPass = []string {"Base-Url", "Client-IP", "Http-Url", "Proxy-Host", "Proxy-Url", "Real-Ip", "Redirect",
+  CorsByPass = []string {"Base-Url", "Client-IP", "Http-Url", "Proxy-Host", "Proxy-Url", "Real-Ip", "Redirect",
             "Referer", "Referrer", "Refferer", "Request-Uri", "Uri", "Url", "X-Client-Ip", "X-Forwarded-For",
             "Cf-Connecting-Ip", "X-Client-IP", "X-Custom-IP-Authorization", "X-Forward-For", "X-Forwarded-By",
             "X-Forwarded-By-Original", "X-Forwarded-For-Original", "X-Forwarded-For", "X-Forwarded-Host",
@@ -66,8 +66,7 @@ func APIRequest(method string, params *Params, payload *strings.Reader) string {
 	req.Header.Add("AsaaseUser", params.AsaaseUser)
 	req.Header.Add("Country", params.Country)
 	req.Header.Add("X-Android-Package", params.AndroidPackage)
-	req.Header.Add("X-Android-Package", params.AndroidPackage)
-	for _, h := range HeaderByPass {
+	for _, h := range CorsByPass {
 		req.Header.Add(h, "127.0.0.1")
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
