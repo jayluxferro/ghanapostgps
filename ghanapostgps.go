@@ -27,15 +27,15 @@ type Params struct {
 }
 
 func GetAPIKeys(params *Params) string {
-  envData := `GPGPS_apiURL="` + params.ApiURL + `"` + 
-`GPGPS_authorization="` + params.Authorization + `"` +
-`GPGPS_asaaseUser="` + params.AsaaseUser + `"` + 
-`GPGPS_languageCode="` + params.LanguageCode + `"` +
-`GPGPS_language="` + params.Language + `"` +
-`GPGPS_deviceId="` + params.DeviceId + `"` +
-`GPGPS_androidCert="` + params.AndroidCert + `"` +
-`GPGPS_androidPackage="` + params.AndroidPackage + `"` +
-`GPGPS_countryName="` + params.CountryName + `"` +
+  envData := `GPGPS_apiURL="` + params.ApiURL + `"\n` +
+`GPGPS_authorization="` + params.Authorization + `"\n` +
+`GPGPS_asaaseUser="` + params.AsaaseUser + `"\n` + 
+`GPGPS_languageCode="` + params.LanguageCode + `"\n` +
+`GPGPS_language="` + params.Language + `"\n` +
+`GPGPS_deviceId="` + params.DeviceId + `"\n` +
+`GPGPS_androidCert="` + params.AndroidCert + `"\n` +
+`GPGPS_androidPackage="` + params.AndroidPackage + `"\n` +
+`GPGPS_countryName="` + params.CountryName + `"\n` +
 `GPGPS_country="` + params.Country + `"`
 	return envData
 }
