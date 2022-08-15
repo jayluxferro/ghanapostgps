@@ -51,7 +51,7 @@ func APIRequest(method string, params *Params, payload *strings.Reader) string {
 	req.Header.Add("Authorization", "Basic " + params.Authorization)
 	req.Header.Add("LanguageCode", params.LanguageCode)
 	req.Header.Add("Language", params.Language)
-	req.Header.Add("CountryName", params.Country)
+	req.Header.Add("CountryName", params.CountryName)
 	req.Header.Add("DeviceId", params.DeviceId)
 	req.Header.Add("X-Android-Cert", params.AndroidCert)
 	req.Header.Add("AsaaseUser", params.AsaaseUser)
@@ -78,11 +78,7 @@ func GetLocation(code string, defaults *Params) string {
 }
 
 func GetDataRequest(v *url.Values, defaults *Params) *strings.Reader {
-	data := v.Encode()
-	params := url.Values{
-		"DataRequest": {data},
-	}
-	return strings.NewReader(params.Encode() + "&")
+	return strings.NewReader(v.Encode())
 }
 
 func Print(data ...interface{}) (n int, err error) {
